@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 
 import typer
 from rich.console import Console
@@ -16,6 +17,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+err_console = Console(stderr=True)
 
 
 @app.callback()
@@ -36,11 +38,15 @@ def index(
 
     console.print(f"[bold cyan]Chromax[/bold cyan] - indexing [green]{repo}[/green]...")
 
-    with Progress(SpinnerColumn("line"), TextColumn("{task.description}"), console=console) as progress:
-        task = progress.add_task("Fetching and chunking files...", total=None)
-        indexer = Indexer(repo)
-        stats = indexer.index()
-        progress.update(task, description="Done!", completed=True)
+    try:
+        with Progress(SpinnerColumn("line"), TextColumn("{task.description}"), console=console) as progress:
+            task = progress.add_task("Fetching and chunking files...", total=None)
+            indexer = Indexer(repo)
+            stats = indexer.index()
+            progress.update(task, description="Done!", completed=True)
+    except Exception as exc:
+        err_console.print(f"[bold red]Error:[/bold red] {exc}")
+        raise typer.Exit(code=1) from exc
 
     console.print(f"\n[bold green]Indexed[/bold green] [green]{repo}[/green]")
     console.print(f"  Files processed : {stats['files_fetched']}")
@@ -57,8 +63,13 @@ def status(
     """Show index stats for a repository."""
     from chromax.indexer.indexer import Indexer
 
-    indexer = Indexer(repo)
-    count = indexer.chunk_count()
+    try:
+        indexer = Indexer(repo)
+        count = indexer.chunk_count()
+    except Exception as exc:
+        err_console.print(f"[bold red]Error:[/bold red] {exc}")
+        raise typer.Exit(code=1) from exc
+
     if count == 0:
         console.print(f"[yellow]{repo}[/yellow] is not indexed yet. Run [bold]chromax index --repo {repo}[/bold].")
     else:
@@ -74,6 +85,11 @@ def ask(
     from chromax.agents.basic import ask as agent_ask
 
     console.print(f"[bold cyan]Chromax[/bold cyan] - asking about [green]{repo}[/green]...")
-    answer = agent_ask(question, repo)
+    try:
+        answer = agent_ask(question, repo)
+    except Exception as exc:
+        err_console.print(f"[bold red]Error:[/bold red] {exc}")
+        raise typer.Exit(code=1) from exc
+
     console.print()
     console.print(Markdown(answer))

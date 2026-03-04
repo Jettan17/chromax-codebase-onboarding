@@ -36,11 +36,7 @@ def search_codebase(query: str, repo: str, n_results: int = 5) -> list[SearchRes
     if indexer.chunk_count() == 0:
         return []
 
-    raw = indexer._collection.query(
-        query_texts=[query],
-        n_results=min(n_results, indexer.chunk_count()),
-        include=["documents", "metadatas", "distances"],
-    )
+    raw = indexer.query(query, n_results)
 
     results: list[SearchResult] = []
     for doc, meta, dist in zip(

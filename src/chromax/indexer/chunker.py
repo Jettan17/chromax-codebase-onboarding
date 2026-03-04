@@ -10,7 +10,7 @@ TEXT_EXTENSIONS = {
     ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".c", ".cpp", ".h", ".hpp",
     ".cs", ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".scala", ".sh",
     ".bash", ".zsh", ".fish", ".ps1", ".md", ".rst", ".txt", ".yaml", ".yml",
-    ".json", ".toml", ".ini", ".cfg", ".env", ".sql", ".html", ".css", ".scss",
+    ".json", ".toml", ".ini", ".cfg", ".sql", ".html", ".css", ".scss",
     ".xml", ".tf", ".hcl", ".dockerfile", ".makefile",
 }
 

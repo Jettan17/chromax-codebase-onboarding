@@ -86,6 +86,21 @@ class Indexer:
     def collection_metadata(self) -> dict:
         return self._collection.metadata or {}
 
+    def query(self, query_text: str, n_results: int = 5) -> dict:
+        """Run a semantic similarity query against the indexed chunks.
+
+        Returns the raw ChromaDB response dict with keys:
+        ``documents``, ``metadatas``, ``distances``.
+        """
+        count = self._collection.count()
+        if count == 0:
+            return {"documents": [[]], "metadatas": [[]], "distances": [[]]}
+        return self._collection.query(
+            query_texts=[query_text],
+            n_results=min(n_results, count),
+            include=["documents", "metadatas", "distances"],
+        )
+
     # ------------------------------------------------------------------
     # Internal steps
     # ------------------------------------------------------------------

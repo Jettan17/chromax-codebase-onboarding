@@ -10,10 +10,14 @@ from github import Auth, Github, GithubException, UnknownObjectException, RateLi
 
 load_dotenv()
 
+_client_cache: dict[str, Github] = {}
+
 
 def _get_client() -> Github:
-    token = os.getenv("GITHUB_TOKEN")
-    return Github(auth=Auth.Token(token)) if token else Github()
+    token = os.getenv("GITHUB_TOKEN") or ""
+    if token not in _client_cache:
+        _client_cache[token] = Github(auth=Auth.Token(token)) if token else Github()
+    return _client_cache[token]
 
 
 def get_readme(repo: str) -> str:
