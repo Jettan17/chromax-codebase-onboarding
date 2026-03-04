@@ -102,8 +102,19 @@ def _make_llm() -> ChatGroq:
 
 
 def call_model(state: AgentState) -> dict:
+    from groq import BadRequestError
     llm = _make_llm()
-    response = llm.invoke(state["messages"])
+    try:
+        response = llm.invoke(state["messages"])
+    except BadRequestError as exc:
+        # Llama 3.3 occasionally generates a malformed tool call (tool_use_failed).
+        # Retry once without tools so the user still gets an answer.
+        if "tool_use_failed" in str(exc):
+            from langchain_core.messages import AIMessage
+            plain_llm = ChatGroq(model="llama-3.3-70b-versatile")
+            response = plain_llm.invoke(state["messages"])
+        else:
+            raise
     return {"messages": [response]}
 
 
