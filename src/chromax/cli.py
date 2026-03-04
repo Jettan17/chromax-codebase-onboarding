@@ -1,4 +1,4 @@
-"""Chromax CLI — codebase onboarding agent."""
+"""Chromax CLI - codebase onboarding agent."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ console = Console()
 
 @app.callback()
 def _main() -> None:
-    """Chromax — codebase onboarding agent."""
+    """Chromax - codebase onboarding agent."""
 
 
 @app.command("index")
@@ -34,9 +34,9 @@ def index(
     if verbose:
         logging.basicConfig(level=logging.DEBUG)
 
-    console.print(f"[bold cyan]Chromax[/bold cyan] — indexing [green]{repo}[/green]...")
+    console.print(f"[bold cyan]Chromax[/bold cyan] - indexing [green]{repo}[/green]...")
 
-    with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console) as progress:
+    with Progress(SpinnerColumn("line"), TextColumn("{task.description}"), console=console) as progress:
         task = progress.add_task("Fetching and chunking files...", total=None)
         indexer = Indexer(repo)
         stats = indexer.index()
@@ -62,7 +62,7 @@ def status(
     if count == 0:
         console.print(f"[yellow]{repo}[/yellow] is not indexed yet. Run [bold]chromax index --repo {repo}[/bold].")
     else:
-        console.print(f"[green]{repo}[/green] — [bold]{count}[/bold] chunks in vector store.")
+        console.print(f"[green]{repo}[/green] - [bold]{count}[/bold] chunks in vector store.")
 
 
 @app.command("ask")
@@ -73,7 +73,7 @@ def ask(
     """Ask a question about a GitHub repository."""
     from chromax.agents.basic import ask as agent_ask
 
-    console.print(f"[bold cyan]Chromax[/bold cyan] — asking about [green]{repo}[/green]...")
+    console.print(f"[bold cyan]Chromax[/bold cyan] - asking about [green]{repo}[/green]...")
     answer = agent_ask(question, repo)
     console.print()
     console.print(Markdown(answer))
