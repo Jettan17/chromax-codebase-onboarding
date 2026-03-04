@@ -80,13 +80,17 @@ def status(
 def ask(
     question: str = typer.Argument(..., help="Natural language question about the codebase."),
     repo: str = typer.Option(..., "--repo", "-r", help="GitHub repo in 'owner/name' format."),
+    session: str = typer.Option(None, "--session", "-s", help="Session ID for conversation memory."),
 ) -> None:
     """Ask a question about a GitHub repository."""
-    from chromax.agents.basic import ask as agent_ask
-
     console.print(f"[bold cyan]Chromax[/bold cyan] - asking about [green]{repo}[/green]...")
     try:
-        answer = agent_ask(question, repo)
+        if session:
+            from chromax.agents.supervisor import ask_with_session
+            answer = ask_with_session(question, repo, session)
+        else:
+            from chromax.agents.supervisor import route
+            answer = route(question, repo)
     except Exception as exc:
         err_console.print(f"[bold red]Error:[/bold red] {exc}")
         raise typer.Exit(code=1) from exc

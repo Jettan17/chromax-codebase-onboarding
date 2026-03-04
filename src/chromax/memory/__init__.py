@@ -1,1 +1,1 @@
-"""Chromax memory — conversation history and session persistence."""
+"""Chromax memory — conversation session persistence."""

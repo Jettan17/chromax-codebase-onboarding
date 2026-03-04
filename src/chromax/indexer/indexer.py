@@ -49,10 +49,20 @@ class Indexer:
     def index(self) -> dict:
         """Run full indexing pipeline.
 
+        Short-circuits if the repo's HEAD SHA matches the last indexed SHA,
+        avoiding redundant API calls for unchanged repos.
+
         Returns:
             dict with keys: files_fetched, files_skipped, chunks_added, chunks_skipped
         """
-        logger.info("Fetching file list for %s", self.repo)
+        current_sha = self._get_head_sha()
+        stored_sha = self._collection.metadata.get("last_indexed_sha")
+        if current_sha and current_sha == stored_sha:
+            logger.info("SHA unchanged (%s) — skipping re-index for %s", current_sha, self.repo)
+            count = self._collection.count()
+            return {"files_fetched": 0, "files_skipped": 0, "chunks_added": 0, "chunks_skipped": count}
+
+        logger.info("Fetching file list for %s (sha=%s)", self.repo, current_sha)
         file_entries = self._list_files()
 
         stats = {"files_fetched": 0, "files_skipped": 0, "chunks_added": 0, "chunks_skipped": 0}
@@ -72,11 +82,17 @@ class Indexer:
             chunks = chunk_file(content, path, self.repo)
             all_chunks.extend(chunks)
             stats["files_fetched"] += 1
-            logger.debug("Chunked %s → %d chunks", path, len(chunks))
+            logger.debug("Chunked %s -> %d chunks", path, len(chunks))
 
         added, skipped = self._store_chunks(all_chunks)
         stats["chunks_added"] = added
         stats["chunks_skipped"] = skipped
+
+        if current_sha:
+            self._collection.modify(
+                metadata={**self._collection.metadata, "last_indexed_sha": current_sha}
+            )
+
         return stats
 
     def chunk_count(self) -> int:
@@ -104,6 +120,16 @@ class Indexer:
     # ------------------------------------------------------------------
     # Internal steps
     # ------------------------------------------------------------------
+
+    def _get_head_sha(self) -> str | None:
+        """Return the current HEAD commit SHA for the repo (short form)."""
+        try:
+            g = _get_client()
+            r = g.get_repo(self.repo)
+            branch = r.get_branch(r.default_branch)
+            return branch.commit.sha[:12]
+        except Exception:
+            return None
 
     def _list_files(self) -> list[tuple[str, int]]:
         """Return list of (path, size_bytes) for all files in the repo."""
