@@ -2,18 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Annotated
-
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
-from langchain_core.messages import BaseMessage
 from langchain_core.tools import tool
-from langgraph.graph import StateGraph, END
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode
-from typing_extensions import TypedDict
 
-from chromax.tools.github import get_readme, get_repo_structure, get_file_content
+from chromax.tools.github import get_file_content, get_readme, get_repo_structure
 
 load_dotenv()
 
@@ -92,52 +84,16 @@ def tool_get_file_content(repo: str, path: str) -> str:
 TOOLS = [tool_search_codebase, tool_get_readme, tool_get_repo_structure, tool_get_file_content]
 
 
-# ---------- LangGraph state ----------
-
-class AgentState(TypedDict):
-    messages: Annotated[list[BaseMessage], add_messages]
-
-
-# ---------- Graph nodes ----------
-
-def _make_llm() -> ChatGroq:
-    return ChatGroq(model="llama-3.3-70b-versatile").bind_tools(TOOLS)
-
-
-def call_model(state: AgentState) -> dict:
-    from groq import BadRequestError
-    llm = _make_llm()
-    try:
-        response = llm.invoke(state["messages"])
-    except BadRequestError as exc:
-        # Llama 3.3 occasionally generates a malformed tool call (tool_use_failed).
-        # Retry once without tools so the user still gets an answer.
-        if "tool_use_failed" in str(exc):
-            from langchain_core.messages import AIMessage
-            plain_llm = ChatGroq(model="llama-3.3-70b-versatile")
-            response = plain_llm.invoke(state["messages"])
-        else:
-            raise
-    return {"messages": [response]}
-
-
-def should_continue(state: AgentState) -> str:
-    last = state["messages"][-1]
-    if hasattr(last, "tool_calls") and last.tool_calls:
-        return "tools"
-    return END
-
-
-# ---------- Build graph ----------
+# ---------- Build graph (delegated to _base, compiled once) ----------
 
 def build_graph():
-    graph = StateGraph(AgentState)
-    graph.add_node("agent", call_model)
-    graph.add_node("tools", ToolNode(TOOLS))
-    graph.set_entry_point("agent")
-    graph.add_conditional_edges("agent", should_continue, {"tools": "tools", END: END})
-    graph.add_edge("tools", "agent")
-    return graph.compile()
+    """Return the compiled LangGraph agent. Delegates to _base._build_graph."""
+    from chromax.agents._base import _build_graph
+    return _build_graph(TOOLS)
+
+
+# Compile once at import time; reused by ask() and ask_with_session().
+_graph = build_graph()
 
 
 # ---------- Public API ----------
@@ -146,8 +102,7 @@ def ask(question: str, repo: str) -> str:
     """Run the agent with a question about a specific repository."""
     from langchain_core.messages import HumanMessage, SystemMessage
 
-    graph = build_graph()
-    result = graph.invoke(
+    result = _graph.invoke(
         {
             "messages": [
                 SystemMessage(content=SYSTEM_PROMPT),

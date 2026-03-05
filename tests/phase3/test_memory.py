@@ -3,17 +3,37 @@
 from __future__ import annotations
 
 import uuid
-import pytest
 from unittest.mock import patch
 
-from chromax.memory.conversation import load_session, save_session, clear_session
+import pytest
+
 from chromax.agents.supervisor import ask_with_session
 from chromax.indexer.indexer import Indexer
+from chromax.memory.conversation import clear_session, load_session, save_session
 
 TEST_REPO = "psf/requests"
 
 
 # ---------- Conversation memory ----------
+
+class TestSessionIdValidation:
+    def test_path_traversal_rejected(self):
+        with pytest.raises(ValueError, match="Invalid session_id"):
+            load_session("../../etc/passwd")
+
+    def test_dotdot_rejected(self):
+        with pytest.raises(ValueError, match="Invalid session_id"):
+            load_session("../config")
+
+    def test_slash_rejected(self):
+        with pytest.raises(ValueError, match="Invalid session_id"):
+            load_session("a/b")
+
+    def test_valid_ids_accepted(self):
+        # Should not raise (file won't exist, returns [])
+        assert load_session("chat-abc123") == []
+        assert load_session("my_session") == []
+
 
 class TestConversationPersistence:
     def test_save_and_load_roundtrip(self, tmp_path, monkeypatch):

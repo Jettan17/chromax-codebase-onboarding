@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from langchain_groq import ChatGroq
 from langchain_core.messages import BaseMessage
-from langgraph.graph import StateGraph, END
+from langchain_groq import ChatGroq
+from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from typing_extensions import TypedDict
@@ -57,11 +57,11 @@ def _build_graph(tools: list):
 def make_ask(tools: list, system_prompt: str):
     """Return an ask(question, repo) function bound to the given tools and prompt."""
     full_prompt = system_prompt + PROMPT_INJECTION_NOTICE
+    _graph = _build_graph(tools)  # compile once, reuse across calls
 
     def ask(question: str, repo: str) -> str:
         from langchain_core.messages import HumanMessage, SystemMessage
-        graph = _build_graph(tools)
-        result = graph.invoke(
+        result = _graph.invoke(
             {
                 "messages": [
                     SystemMessage(content=full_prompt),

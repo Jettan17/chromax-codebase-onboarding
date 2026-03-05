@@ -123,12 +123,14 @@ class Indexer:
 
     def _get_head_sha(self) -> str | None:
         """Return the current HEAD commit SHA for the repo (short form)."""
+        from github import GithubException
         try:
             g = _get_client()
             r = g.get_repo(self.repo)
             branch = r.get_branch(r.default_branch)
             return branch.commit.sha[:12]
-        except Exception:
+        except GithubException as exc:
+            logger.warning("Could not fetch HEAD SHA for %s: %s", self.repo, exc)
             return None
 
     def _list_files(self) -> list[tuple[str, int]]:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-import sys
+import re
 
 import typer
 from rich.console import Console
@@ -19,6 +19,17 @@ app = typer.Typer(
 console = Console()
 err_console = Console(stderr=True)
 
+_REPO_RE = re.compile(r"^[\w.\-]+/[\w.\-]+$")
+
+
+def _validate_repo(repo: str) -> None:
+    """Raise UsageError if repo is not in 'owner/name' format."""
+    if not _REPO_RE.match(repo):
+        raise typer.BadParameter(
+            f"'{repo}' is not a valid repo. Expected 'owner/name' (e.g. 'psf/requests').",
+            param_hint="'--repo'",
+        )
+
 
 @app.callback()
 def _main() -> None:
@@ -31,6 +42,7 @@ def index(
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show debug logs."),
 ) -> None:
     """Index a GitHub repository into the local vector store."""
+    _validate_repo(repo)
     from chromax.indexer.indexer import Indexer
 
     if verbose:
@@ -61,6 +73,7 @@ def status(
     repo: str = typer.Option(..., "--repo", "-r", help="GitHub repo in 'owner/name' format."),
 ) -> None:
     """Show index stats for a repository."""
+    _validate_repo(repo)
     from chromax.indexer.indexer import Indexer
 
     try:
@@ -83,6 +96,7 @@ def ask(
     session: str = typer.Option(None, "--session", "-s", help="Session ID for conversation memory."),
 ) -> None:
     """Ask a question about a GitHub repository."""
+    _validate_repo(repo)
     console.print(f"[bold cyan]Chromax[/bold cyan] - asking about [green]{repo}[/green]...")
     try:
         if session:
@@ -97,3 +111,43 @@ def ask(
 
     console.print()
     console.print(Markdown(answer))
+
+
+@app.command("chat")
+def chat(
+    repo: str = typer.Option(..., "--repo", "-r", help="GitHub repo in 'owner/name' format."),
+    session: str = typer.Option(None, "--session", "-s", help="Session ID (auto-generated if omitted)."),
+) -> None:
+    """Start an interactive multi-turn conversation about a repository."""
+    _validate_repo(repo)
+    import uuid
+
+    from chromax.agents.supervisor import ask_with_session
+
+    session_id = session or f"chat-{uuid.uuid4().hex[:8]}"
+    console.print(f"[bold cyan]Chromax chat[/bold cyan] - [green]{repo}[/green]  (session: {session_id})")
+    console.print("[dim]Type your question and press Enter. Ctrl+C or 'exit' to quit.[/dim]\n")
+
+    while True:
+        try:
+            question = typer.prompt("You")
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[dim]Session ended.[/dim]")
+            break
+
+        if question.strip().lower() in {"exit", "quit", "q"}:
+            console.print("[dim]Session ended.[/dim]")
+            break
+
+        if not question.strip():
+            continue
+
+        try:
+            answer = ask_with_session(question, repo, session_id)
+        except Exception as exc:
+            err_console.print(f"[bold red]Error:[/bold red] {exc}")
+            continue
+
+        console.print()
+        console.print(Markdown(answer))
+        console.print()

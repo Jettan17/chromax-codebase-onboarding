@@ -78,8 +78,12 @@ def ask_with_session(question: str, repo: str, session_id: str) -> str:
 
     history = load_session(session_id)
 
+    # Cap to last 20 messages to stay within context window for long sessions.
+    MAX_HISTORY = 20
+    recent_history = history[-MAX_HISTORY:] if len(history) > MAX_HISTORY else history
+
     messages = [SystemMessage(content=SYSTEM_PROMPT)]
-    for msg in history:
+    for msg in recent_history:
         if msg["role"] == "human":
             messages.append(HumanMessage(content=msg["content"]))
         else:
