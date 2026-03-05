@@ -1,7 +1,7 @@
 """AnalyzerAgent — explains code logic and function behaviour."""
 
 from chromax.agents._base import make_ask
-from chromax.agents.basic import tool_search_codebase, tool_get_file_content, tool_get_readme
+from chromax.agents.basic import tool_get_file_content, tool_get_readme, tool_search_codebase
 
 TOOLS = [tool_search_codebase, tool_get_file_content, tool_get_readme]
 

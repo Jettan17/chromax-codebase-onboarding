@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import os
-import time
 import functools
 import logging
-from typing import Optional
+import os
+import time
 
 from dotenv import load_dotenv
-from github import Auth, Github, GithubException, UnknownObjectException, RateLimitExceededException
+from github import Auth, Github, GithubException, RateLimitExceededException, UnknownObjectException
 
 load_dotenv()
 

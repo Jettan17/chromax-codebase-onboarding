@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 from chromax.indexer.chunker import is_text_file
-from chromax.tools.github import get_readme, get_file_content, get_repo_structure
-
+from chromax.tools.github import get_file_content, get_readme
 
 # ---------- File size / type edge cases (no network needed) ----------
 

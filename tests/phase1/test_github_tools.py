@@ -1,7 +1,6 @@
 """Phase 1B — Tests for get_repo_structure and get_file_content."""
 
-import pytest
-from chromax.tools.github import get_repo_structure, get_file_content
+from chromax.tools.github import get_file_content, get_repo_structure
 
 TEST_REPO = "psf/requests"
 

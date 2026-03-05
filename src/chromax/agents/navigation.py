@@ -2,9 +2,9 @@
 
 from chromax.agents._base import make_ask
 from chromax.agents.basic import (
-    tool_search_codebase,
-    tool_get_repo_structure,
     tool_get_file_content,
+    tool_get_repo_structure,
+    tool_search_codebase,
 )
 
 TOOLS = [tool_search_codebase, tool_get_repo_structure, tool_get_file_content]

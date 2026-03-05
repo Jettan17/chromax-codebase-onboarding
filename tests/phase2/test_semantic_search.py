@@ -7,8 +7,8 @@ try:
 except ImportError:
     _GroqRateLimitError = Exception
 
-from chromax.tools.search import search_codebase, SearchResult
 from chromax.agents.basic import ask
+from chromax.tools.search import SearchResult, search_codebase
 
 TEST_REPO = "psf/requests"
 

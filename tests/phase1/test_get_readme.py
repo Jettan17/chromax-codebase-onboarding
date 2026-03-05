@@ -1,6 +1,5 @@
 """Phase 1A — Test get_readme tool against a real public repo."""
 
-import pytest
 from chromax.tools.github import get_readme
 
 
