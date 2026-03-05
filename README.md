@@ -147,7 +147,6 @@ src/chromax/
   indexer/
     indexer.py        # Indexer class (index, chunk_count, query)
     chunker.py        # File filtering + text chunking
-    embedder.py       # Embedding wrapper
   memory/
     conversation.py   # load_session / save_session (JSON on disk)
   tools/
@@ -165,6 +164,16 @@ tests/
 ---
 
 ## Development
+
+Activate the venv first:
+
+```bash
+source .venv/Scripts/activate   # Git Bash on Windows
+# or
+source .venv/bin/activate        # macOS / Linux
+```
+
+Then:
 
 ```bash
 # Run tests
