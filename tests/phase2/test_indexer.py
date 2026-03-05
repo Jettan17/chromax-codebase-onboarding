@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from chromax.indexer.chunker import chunk_file, is_text_file, language_from_path
 from chromax.indexer.indexer import Indexer
 
@@ -79,12 +80,16 @@ class TestChunkFile:
 # These tests share one index run via a module-level fixture to avoid
 # re-fetching psf/requests from GitHub on every test.
 
-import pytest
 
 @pytest.fixture(scope="module")
 def indexed_repo():
     """Index psf/requests once and share across all tests in this module."""
     indexer = Indexer(TEST_REPO)
+    # Clear stored SHA so the full pipeline always runs (not the short-circuit path).
+    # This ensures stats like files_skipped reflect a real indexing pass.
+    existing = indexer._collection.metadata or {}
+    if "last_indexed_sha" in existing:
+        indexer._collection.modify(metadata={**existing, "last_indexed_sha": ""})
     stats = indexer.index()
     return indexer, stats
 

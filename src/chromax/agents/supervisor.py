@@ -41,10 +41,15 @@ def classify_query(question: str) -> str:
 
 def route(question: str, repo: str) -> str:
     """Classify a question and delegate to the appropriate specialist agent."""
-    from chromax.agents.structure import ask as ask_structure
     from chromax.agents.analyzer import ask as ask_analyzer
     from chromax.agents.navigation import ask as ask_navigation
     from chromax.agents.search import ask as ask_search
+    from chromax.agents.structure import ask as ask_structure
+    from chromax.cache import _cache
+
+    cached = _cache.get(question, repo)
+    if cached is not None:
+        return cached
 
     specialist = {
         "structure": ask_structure,
@@ -53,7 +58,9 @@ def route(question: str, repo: str) -> str:
         "search": ask_search,
     }
     category = classify_query(question)
-    return specialist[category](question, repo)
+    answer = specialist[category](question, repo)
+    _cache.set(question, repo, answer)
+    return answer
 
 
 # ---------- Session-aware routing ----------
@@ -65,6 +72,7 @@ def ask_with_session(question: str, repo: str, session_id: str) -> str:
     across multi-turn conversations without re-classifying each turn.
     """
     from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
     from chromax.agents.basic import SYSTEM_PROMPT, build_graph
     from chromax.memory.conversation import load_session, save_session
 
