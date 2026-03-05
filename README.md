@@ -61,7 +61,7 @@ Agent      Agent      Agent       Agent
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/chromax-codebase-onboarding
+git clone https://github.com/Jettan17/chromax-codebase-onboarding
 cd chromax-codebase-onboarding
 
 python -m venv .venv
