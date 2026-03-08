@@ -113,6 +113,40 @@ def ask(
     console.print(Markdown(answer))
 
 
+@app.command("arch")
+def arch(
+    question: str = typer.Argument(None, help="Architecture question (omit for a full overview)."),
+    repo: str = typer.Option(..., "--repo", "-r", help="GitHub repo in 'owner/name' format."),
+    session: str = typer.Option(None, "--session", "-s", help="Session ID for conversation memory."),
+) -> None:
+    """Analyse the architecture of a GitHub repository.
+
+    Omit the question to get a full structured overview (tech stack, module map,
+    data flow, design patterns, weak spots). Provide a question to get targeted
+    architectural analysis with trade-off reasoning.
+    """
+    _validate_repo(repo)
+    from chromax.agents.arch import OVERVIEW_PROMPT
+    from chromax.agents.arch import ask as ask_arch
+
+    effective_question = question or OVERVIEW_PROMPT
+    label = "architecture overview" if question is None else "architecture question"
+    console.print(f"[bold cyan]Chromax[/bold cyan] - {label} for [green]{repo}[/green]...")
+
+    try:
+        if session:
+            from chromax.agents.supervisor import ask_with_session
+            answer = ask_with_session(effective_question, repo, session)
+        else:
+            answer = ask_arch(effective_question, repo)
+    except Exception as exc:
+        err_console.print(f"[bold red]Error:[/bold red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print()
+    console.print(Markdown(answer))
+
+
 @app.command("chat")
 def chat(
     repo: str = typer.Option(..., "--repo", "-r", help="GitHub repo in 'owner/name' format."),

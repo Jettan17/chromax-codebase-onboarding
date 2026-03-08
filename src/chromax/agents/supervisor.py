@@ -16,13 +16,15 @@ Classify this codebase question into exactly one of these categories:
 - analyzer: code logic, how a function works, algorithm details, implementation explanation
 - navigation: finding where specific code, a feature, or a concept is located
 - search: finding code similar to a description, semantic similarity search
+- architecture: high-level system design, component relationships, design patterns, \
+architectural overview, trade-offs, or how major parts of the system interact
 
-Respond with ONLY the category name (structure / analyzer / navigation / search).
+Respond with ONLY the category name (structure / analyzer / navigation / search / architecture).
 Do not add any other text or punctuation.
 
 Question: {question}"""
 
-_VALID_CATEGORIES = frozenset({"structure", "analyzer", "navigation", "search"})
+_VALID_CATEGORIES = frozenset({"structure", "analyzer", "navigation", "search", "architecture"})
 
 
 def classify_query(question: str) -> str:
@@ -42,6 +44,7 @@ def classify_query(question: str) -> str:
 def route(question: str, repo: str) -> str:
     """Classify a question and delegate to the appropriate specialist agent."""
     from chromax.agents.analyzer import ask as ask_analyzer
+    from chromax.agents.arch import ask as ask_arch
     from chromax.agents.navigation import ask as ask_navigation
     from chromax.agents.search import ask as ask_search
     from chromax.agents.structure import ask as ask_structure
@@ -56,6 +59,7 @@ def route(question: str, repo: str) -> str:
         "analyzer": ask_analyzer,
         "navigation": ask_navigation,
         "search": ask_search,
+        "architecture": ask_arch,
     }
     category = classify_query(question)
     answer = specialist[category](question, repo)
