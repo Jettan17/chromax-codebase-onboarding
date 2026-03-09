@@ -44,6 +44,99 @@ class TestArchPromptContract:
         assert callable(ask)
 
 
+class TestExtractCitations:
+    """Unit tests for _extract_citations — pure function, no network."""
+
+    def test_backtick_with_line_range(self):
+        from chromax.agents.arch import _extract_citations
+
+        result = _extract_citations("See `src/foo.py:10-20` for details.")
+        assert "src/foo.py" in result
+
+    def test_backtick_without_line(self):
+        from chromax.agents.arch import _extract_citations
+
+        result = _extract_citations("Defined in `src/bar/baz.py`.")
+        assert "src/bar/baz.py" in result
+
+    def test_bare_path_with_line_number(self):
+        from chromax.agents.arch import _extract_citations
+
+        result = _extract_citations("Coupling at src/x/y.py:42 is the issue.")
+        assert "src/x/y.py" in result
+
+    def test_deduplicates_repeated_citations(self):
+        from chromax.agents.arch import _extract_citations
+
+        result = _extract_citations("`src/foo.py:1` and `src/foo.py:5` are both relevant.")
+        assert result.count("src/foo.py") == 1
+
+    def test_empty_string_returns_empty_list(self):
+        from chromax.agents.arch import _extract_citations
+
+        assert _extract_citations("") == []
+
+    def test_plain_prose_no_citations(self):
+        from chromax.agents.arch import _extract_citations
+
+        result = _extract_citations("This is a great codebase with no file references at all.")
+        assert result == []
+
+    def test_ignores_bare_filename_without_slash(self):
+        """'File "foo.py", line 10' style should NOT be extracted (no slash)."""
+        from chromax.agents.arch import _extract_citations
+
+        result = _extract_citations('File "foo.py", line 10 — this is a Python traceback.')
+        assert "foo.py" not in result
+
+
+class TestVerifyCitations:
+    """Unit tests for _verify_citations — pure function, no network."""
+
+    def test_hallucination_detected_appends_warning(self):
+        from chromax.agents.arch import _verify_citations
+
+        known = {"src/real.py", "src/other.py"}
+        response = "See `src/fake.py:10` and `src/real.py:5`."
+        result = _verify_citations(response, known)
+        assert "[!]" in result
+        assert "src/fake.py" in result
+
+    def test_all_citations_real_no_warning(self):
+        from chromax.agents.arch import _verify_citations
+
+        known = {"src/real.py"}
+        response = "Everything is in `src/real.py:1-10`."
+        result = _verify_citations(response, known)
+        assert result == response
+
+    def test_empty_known_paths_returns_unchanged(self):
+        """Graceful degradation: if we couldn't fetch file list, don't add noise."""
+        from chromax.agents.arch import _verify_citations
+
+        response = "See `src/anything.py:5`."
+        result = _verify_citations(response, set())
+        assert result == response
+
+    def test_no_citations_in_response_returns_unchanged(self):
+        from chromax.agents.arch import _verify_citations
+
+        known = {"src/real.py"}
+        response = "This is a plain prose response with no file citations."
+        result = _verify_citations(response, known)
+        assert result == response
+
+    def test_warning_does_not_list_real_citations(self):
+        from chromax.agents.arch import _verify_citations
+
+        known = {"src/real.py"}
+        response = "See `src/real.py:1` and `src/fake.py:5`."
+        result = _verify_citations(response, known)
+        # real file should NOT appear in the warning block
+        warning_section = result[result.index("[!]"):]
+        assert "src/real.py" not in warning_section
+
+
 class TestSupervisorArchRouting:
     """supervisor.classify_query() recognises architecture questions."""
 

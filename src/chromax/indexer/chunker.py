@@ -5,6 +5,20 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+# Directory prefixes that are tooling/meta and should never be indexed
+SKIP_PATH_PREFIXES = (
+    ".claude/",       # Claude Code SDK files (agents, commands, plans)
+    ".github/",       # GitHub Actions / issue templates
+    ".venv/",         # Python virtual environments
+    "venv/",
+    "env/",
+    "node_modules/",  # JS dependencies
+    "dist/",          # build artifacts
+    "build/",
+    ".next/",
+    "__pycache__/",
+)
+
 # Extensions we consider text/code (skip everything else)
 TEXT_EXTENSIONS = {
     ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".c", ".cpp", ".h", ".hpp",
@@ -54,6 +68,8 @@ def language_from_path(path: str) -> str:
 def is_text_file(path: str, size_bytes: int) -> bool:
     """Return True if the file should be indexed."""
     if size_bytes > 100_000:
+        return False
+    if any(path.startswith(prefix) for prefix in SKIP_PATH_PREFIXES):
         return False
     ext = ("." + path.rsplit(".", 1)[-1].lower()) if "." in path else ""
     name = path.split("/")[-1].lower()

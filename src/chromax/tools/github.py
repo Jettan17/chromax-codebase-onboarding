@@ -126,6 +126,26 @@ def get_repo_structure(repo: str, max_depth: int = 3) -> str:
         return f"Error: GitHub API error {exc.status}: {exc.data.get('message', str(exc))}"
 
 
+def get_all_file_paths(repo: str) -> list[str] | None:
+    """Return a flat list of all file paths (blobs only) in a repository.
+
+    Used by the arch agent to build the known-paths set for citation verification.
+
+    Args:
+        repo: Repository in 'owner/name' format.
+
+    Returns:
+        List of relative file paths (e.g. ['src/main.py', 'README.md']), or None on error.
+    """
+    try:
+        g = _get_client()
+        r = g.get_repo(repo)
+        tree = r.get_git_tree(r.default_branch, recursive=True)
+        return [element.path for element in tree.tree if element.type == "blob"]
+    except Exception:
+        return None
+
+
 def get_file_content(repo: str, path: str) -> str:
     """Fetch the raw content of a specific file in a repository.
 
